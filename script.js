@@ -1,52 +1,51 @@
 const target = document.getElementById('typewriter');
 const cursor = document.querySelector('.cursor');
 
-const parts = [
-  { text: 'Building ',        gold: false },
-  { text: 'elegant',          gold: true  },
-  { text: '\ndigital systems', gold: false },
+const phrases = [
+  { prefix: 'Building ', highlight: 'elegant' },
+  { prefix: 'Digital ',  highlight: 'systems' }
 ];
 
-let partIndex = 0;
-let charIndex = 0;
-// Endless typing: wait 3 seconds after finishing, then restart
-function type() {
-  if (partIndex >= parts.length) {
-    setTimeout(() => {
-      partIndex = 0;
-      charIndex = 0;
-      target.innerHTML = '';
-      type();
-    }, 3000);
-    return;
-  }
-//current part we are typing and slice current position of letter//
-  const current = parts[partIndex];
-  const slice = current.text.slice(0, charIndex + 1);
-//Creating a loop for each letter in html//
-  let html = '';
-  for (let i = 0; i < partIndex; i++) {
-    const p = parts[i];
-    const t = p.text.replace('\n', '<br>');
-    html += p.gold ? `<em style="color:var(--gold)">${t}</em>` : t;
-  }
-  const currentText = slice.replace('\n', '<br>');
-  html += current.gold
-    ? `<em style="color:var(--gold)">${currentText}</em>`
-    : currentText;
+let phraseIndex = 0;
+let charCount = 0;
+let isDeleting = false;
 
+function tick() {
+  const current = phrases[phraseIndex];
+  const fullText = current.prefix + current.highlight;
+  const prefixLen = current.prefix.length;
+
+  if (isDeleting) {
+    charCount--;
+  } else {
+    charCount++;
+  }
+
+  // Render current sliced state
+  let html = '';
+  if (charCount <= prefixLen) {
+    html = current.prefix.slice(0, charCount);
+  } else {
+    const highlightPart = current.highlight.slice(0, charCount - prefixLen);
+    html = current.prefix + `<em style="color:var(--gold)">${highlightPart}</em>`;
+  }
   target.innerHTML = html;
 
-  charIndex++;
-  if (charIndex >= current.text.length) {
-    partIndex++;
-    charIndex = 0;
-    setTimeout(type, 180);
-  } else {
-    setTimeout(type, 55);
+  let speed = isDeleting ? 38 : 70;
+
+  // Finished typing full phrase: pause then delete
+  if (!isDeleting && charCount === fullText.length) {
+    speed = 2200; // Pause so visitors can read the completed phrase
+    isDeleting = true;
+  } else if (isDeleting && charCount === 0) {
+    isDeleting = false;
+    phraseIndex = (phraseIndex + 1) % phrases.length;
+    speed = 400; // Brief pause before typing next phrase on the same spot
   }
+
+  setTimeout(tick, speed);
 }
-setTimeout(type, 600);
+setTimeout(tick, 600);
 
 // --- Scroll Fade-in Animations ---
 const observerOptions = {
